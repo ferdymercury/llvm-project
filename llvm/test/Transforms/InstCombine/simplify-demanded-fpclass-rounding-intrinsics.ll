@@ -14,8 +14,7 @@ define nofpclass(snan) float @ret_no_snan__floor_no_snan(float nofpclass(nan) %x
 define nofpclass(inf norm sub zero) float @ret_only_nan__floor(float %x) {
 ; CHECK-LABEL: define nofpclass(inf zero sub norm) float @ret_only_nan__floor(
 ; CHECK-SAME: float [[X:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[X]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0x7FF8000000000000
 ;
   %result = call float @llvm.floor.f32(float %x)
   ret float %result
@@ -24,8 +23,7 @@ define nofpclass(inf norm sub zero) float @ret_only_nan__floor(float %x) {
 define nofpclass(inf norm sub zero) <2 x float> @ret_only_nan__floor_vec(<2 x float> %x) {
 ; CHECK-LABEL: define nofpclass(inf zero sub norm) <2 x float> @ret_only_nan__floor_vec(
 ; CHECK-SAME: <2 x float> [[X:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call <2 x float> @llvm.floor.v2f32(<2 x float> [[X]])
-; CHECK-NEXT:    ret <2 x float> [[RESULT]]
+; CHECK-NEXT:    ret <2 x float> splat (float 0x7FF8000000000000)
 ;
   %result = call <2 x float> @llvm.floor.v2f32(<2 x float> %x)
   ret <2 x float> %result
@@ -140,8 +138,7 @@ define nofpclass(nan inf) float @ret_no_nans_no_infs__floor(float %x) {
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__floor(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__floor(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -152,8 +149,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__floor(i1 %cond, f
 define nofpclass(inf) float @ret_no_infs__simplify_select_inf__floor(i1 %cond, float nofpclass(nan norm sub zero) %is.inf, float %unknown) {
 ; CHECK-LABEL: define nofpclass(inf) float @ret_no_infs__simplify_select_inf__floor(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(nan zero sub norm) [[IS_INF:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_INF]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.inf, float %unknown
@@ -164,8 +160,7 @@ define nofpclass(inf) float @ret_no_infs__simplify_select_inf__floor(i1 %cond, f
 define nofpclass(nan inf) float @ret_no_inf_no_nan__simplify_select_inf_or_nan__floor(i1 %cond, float nofpclass(norm sub zero) %is.inf.or.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan inf) float @ret_no_inf_no_nan__simplify_select_inf_or_nan__floor(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(zero sub norm) [[IS_INF_OR_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_INF_OR_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.inf.or.nan, float %unknown
@@ -228,8 +223,7 @@ define nofpclass(snan) <2 x float> @source_known_sub_or_zero_or_nan__floor_vec(<
 define nofpclass(snan) float @source_known_psub_or_pzero__floor(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__floor(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.floor.f32(float %psub.or.pzero)
   ret float %result
@@ -268,8 +262,7 @@ define nofpclass(snan) float @source_known_nsub_or_nzero_or_nan__floor(float nof
 define nofpclass(snan) float @source_known_inf__floor(float nofpclass(nan norm sub zero) %inf) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_inf__floor(
 ; CHECK-SAME: float nofpclass(nan zero sub norm) [[INF:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[INF]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float [[INF]]
 ;
   %result = call float @llvm.floor.f32(float %inf)
   ret float %result
@@ -278,8 +271,7 @@ define nofpclass(snan) float @source_known_inf__floor(float nofpclass(nan norm s
 define nofpclass(snan) float @source_known_inf_or_nan__floor(float nofpclass(norm sub zero) %inf.or.nan) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_inf_or_nan__floor(
 ; CHECK-SAME: float nofpclass(zero sub norm) [[INF_OR_NAN:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[INF_OR_NAN]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float [[INF_OR_NAN]]
 ;
   %result = call float @llvm.floor.f32(float %inf.or.nan)
   ret float %result
@@ -297,8 +289,7 @@ define nofpclass(snan) float @source_known_pinf__floor(float nofpclass(nan ninf 
 define nofpclass(snan) float @source_known_pinf_or_nan__floor(float nofpclass(ninf norm sub zero) %pinf.or.nan) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_pinf_or_nan__floor(
 ; CHECK-SAME: float nofpclass(ninf zero sub norm) [[PINF_OR_NAN:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[PINF_OR_NAN]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float [[PINF_OR_NAN]]
 ;
   %result = call float @llvm.floor.f32(float %pinf.or.nan)
   ret float %result
@@ -316,8 +307,7 @@ define nofpclass(snan) float @source_known_ninf__floor(float nofpclass(nan pinf 
 define nofpclass(snan) float @source_known_ninf_or_nan__floor(float nofpclass(pinf norm sub zero) %ninf.or.nan) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_ninf_or_nan__floor(
 ; CHECK-SAME: float nofpclass(pinf zero sub norm) [[NINF_OR_NAN:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.floor.f32(float [[NINF_OR_NAN]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float [[NINF_OR_NAN]]
 ;
   %result = call float @llvm.floor.f32(float %ninf.or.nan)
   ret float %result
@@ -366,8 +356,7 @@ define nofpclass(snan) ppc_fp128 @source_known_not_ninf__floor_ppcf128(ppc_fp128
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__trunc(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__trunc(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -378,8 +367,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__trunc(i1 %cond, f
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__ceil(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__ceil(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.ceil.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.ceil.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -390,8 +378,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__ceil(i1 %cond, fl
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__rint(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__rint(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -402,8 +389,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__rint(i1 %cond, fl
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__nearbyint(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__nearbyint(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -414,8 +400,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__nearbyint(i1 %con
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__round(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__round(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -426,8 +411,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__round(i1 %cond, f
 define nofpclass(nan) float @ret_no_nans__simplify_select_nan__roundeven(i1 %cond, float nofpclass(inf norm sub zero) %is.nan, float %unknown) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans__simplify_select_nan__roundeven(
 ; CHECK-SAME: i1 [[COND:%.*]], float nofpclass(inf zero sub norm) [[IS_NAN:%.*]], float [[UNKNOWN:%.*]]) {
-; CHECK-NEXT:    [[SELECT:%.*]] = select i1 [[COND]], float [[IS_NAN]], float [[UNKNOWN]]
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[SELECT]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[UNKNOWN]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %select = select i1 %cond, float %is.nan, float %unknown
@@ -438,7 +422,7 @@ define nofpclass(nan) float @ret_no_nans__simplify_select_nan__roundeven(i1 %con
 define nofpclass(snan) float @source_known_sub_or_zero__trunc(float nofpclass(nan inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_sub_or_zero__trunc(
 ; CHECK-SAME: float nofpclass(nan inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.trunc.f32(float %sub.or.zero)
@@ -448,8 +432,7 @@ define nofpclass(snan) float @source_known_sub_or_zero__trunc(float nofpclass(na
 define nofpclass(snan) float @source_known_psub_or_pzero__trunc(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__trunc(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.trunc.f32(float %psub.or.pzero)
   ret float %result
@@ -458,8 +441,7 @@ define nofpclass(snan) float @source_known_psub_or_pzero__trunc(float nofpclass(
 define nofpclass(snan) float @source_known_nsub_or_nzero__trunc(float nofpclass(nan inf norm psub pzero) %nsub.or.nzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_nsub_or_nzero__trunc(
 ; CHECK-SAME: float nofpclass(nan inf pzero psub norm) [[NSUB_OR_NZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[NSUB_OR_NZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float -0.000000e+00
 ;
   %result = call float @llvm.trunc.f32(float %nsub.or.nzero)
   ret float %result
@@ -498,7 +480,7 @@ define nofpclass(snan) float @source_known_nsub_or_nzero__ceil(float nofpclass(n
 define nofpclass(snan) float @source_known_sub_or_zero__rint(float nofpclass(nan inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_sub_or_zero__rint(
 ; CHECK-SAME: float nofpclass(nan inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.rint.f32(float %sub.or.zero)
@@ -508,8 +490,7 @@ define nofpclass(snan) float @source_known_sub_or_zero__rint(float nofpclass(nan
 define nofpclass(snan) float @source_known_psub_or_pzero__rint(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__rint(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.rint.f32(float %psub.or.pzero)
   ret float %result
@@ -518,8 +499,7 @@ define nofpclass(snan) float @source_known_psub_or_pzero__rint(float nofpclass(n
 define nofpclass(snan) float @source_known_nsub_or_nzero__rint(float nofpclass(nan inf norm psub pzero) %nsub.or.nzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_nsub_or_nzero__rint(
 ; CHECK-SAME: float nofpclass(nan inf pzero psub norm) [[NSUB_OR_NZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[NSUB_OR_NZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float -0.000000e+00
 ;
   %result = call float @llvm.rint.f32(float %nsub.or.nzero)
   ret float %result
@@ -528,7 +508,7 @@ define nofpclass(snan) float @source_known_nsub_or_nzero__rint(float nofpclass(n
 define nofpclass(snan) float @source_known_sub_or_zero__nearbyint(float nofpclass(nan inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_sub_or_zero__nearbyint(
 ; CHECK-SAME: float nofpclass(nan inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.nearbyint.f32(float %sub.or.zero)
@@ -538,8 +518,7 @@ define nofpclass(snan) float @source_known_sub_or_zero__nearbyint(float nofpclas
 define nofpclass(snan) float @source_known_psub_or_pzero__nearbyint(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__nearbyint(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.nearbyint.f32(float %psub.or.pzero)
   ret float %result
@@ -548,8 +527,7 @@ define nofpclass(snan) float @source_known_psub_or_pzero__nearbyint(float nofpcl
 define nofpclass(snan) float @source_known_nsub_or_nzero__nearbyint(float nofpclass(nan inf norm psub pzero) %nsub.or.nzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_nsub_or_nzero__nearbyint(
 ; CHECK-SAME: float nofpclass(nan inf pzero psub norm) [[NSUB_OR_NZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[NSUB_OR_NZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float -0.000000e+00
 ;
   %result = call float @llvm.nearbyint.f32(float %nsub.or.nzero)
   ret float %result
@@ -558,7 +536,7 @@ define nofpclass(snan) float @source_known_nsub_or_nzero__nearbyint(float nofpcl
 define nofpclass(snan) float @source_known_sub_or_zero__round(float nofpclass(nan inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_sub_or_zero__round(
 ; CHECK-SAME: float nofpclass(nan inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.round.f32(float %sub.or.zero)
@@ -568,8 +546,7 @@ define nofpclass(snan) float @source_known_sub_or_zero__round(float nofpclass(na
 define nofpclass(snan) float @source_known_psub_or_pzero__round(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__round(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.round.f32(float %psub.or.pzero)
   ret float %result
@@ -578,8 +555,7 @@ define nofpclass(snan) float @source_known_psub_or_pzero__round(float nofpclass(
 define nofpclass(snan) float @source_known_nsub_or_nzero__round(float nofpclass(nan inf norm psub pzero) %nsub.or.nzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_nsub_or_nzero__round(
 ; CHECK-SAME: float nofpclass(nan inf pzero psub norm) [[NSUB_OR_NZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[NSUB_OR_NZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float -0.000000e+00
 ;
   %result = call float @llvm.round.f32(float %nsub.or.nzero)
   ret float %result
@@ -588,7 +564,7 @@ define nofpclass(snan) float @source_known_nsub_or_nzero__round(float nofpclass(
 define nofpclass(snan) float @source_known_sub_or_zero__roundeven(float nofpclass(nan inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_sub_or_zero__roundeven(
 ; CHECK-SAME: float nofpclass(nan inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.roundeven.f32(float %sub.or.zero)
@@ -598,8 +574,7 @@ define nofpclass(snan) float @source_known_sub_or_zero__roundeven(float nofpclas
 define nofpclass(snan) float @source_known_psub_or_pzero__roundeven(float nofpclass(nan inf norm nsub nzero) %psub.or.pzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_psub_or_pzero__roundeven(
 ; CHECK-SAME: float nofpclass(nan inf nzero nsub norm) [[PSUB_OR_PZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[PSUB_OR_PZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float 0.000000e+00
 ;
   %result = call float @llvm.roundeven.f32(float %psub.or.pzero)
   ret float %result
@@ -608,8 +583,7 @@ define nofpclass(snan) float @source_known_psub_or_pzero__roundeven(float nofpcl
 define nofpclass(snan) float @source_known_nsub_or_nzero__roundeven(float nofpclass(nan inf norm psub pzero) %nsub.or.nzero) {
 ; CHECK-LABEL: define nofpclass(snan) float @source_known_nsub_or_nzero__roundeven(
 ; CHECK-SAME: float nofpclass(nan inf pzero psub norm) [[NSUB_OR_NZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[NSUB_OR_NZERO]])
-; CHECK-NEXT:    ret float [[RESULT]]
+; CHECK-NEXT:    ret float -0.000000e+00
 ;
   %result = call float @llvm.roundeven.f32(float %nsub.or.nzero)
   ret float %result
@@ -648,7 +622,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__floor
 define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__trunc(float nofpclass(inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__trunc(
 ; CHECK-SAME: float nofpclass(inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.trunc.f32(float %sub.or.zero)
@@ -658,7 +632,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__trunc(
 define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__trunc(float nofpclass(inf norm nsub) %psub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__trunc(
 ; CHECK-SAME: float nofpclass(inf nsub norm) [[PSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[PSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[PSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.trunc.f32(float %psub.or.zero)
@@ -668,7 +642,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__trunc
 define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__trunc(float nofpclass(inf norm psub) %nsub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__trunc(
 ; CHECK-SAME: float nofpclass(inf psub norm) [[NSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.trunc.f32(float [[NSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[NSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.trunc.f32(float %nsub.or.zero)
@@ -708,7 +682,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__ceil(
 define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__rint(float nofpclass(inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__rint(
 ; CHECK-SAME: float nofpclass(inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.rint.f32(float %sub.or.zero)
@@ -718,7 +692,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__rint(f
 define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__rint(float nofpclass(inf norm nsub) %psub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__rint(
 ; CHECK-SAME: float nofpclass(inf nsub norm) [[PSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[PSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[PSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.rint.f32(float %psub.or.zero)
@@ -728,7 +702,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__rint(
 define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__rint(float nofpclass(inf norm psub) %nsub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__rint(
 ; CHECK-SAME: float nofpclass(inf psub norm) [[NSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.rint.f32(float [[NSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[NSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.rint.f32(float %nsub.or.zero)
@@ -738,7 +712,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__rint(
 define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__nearbyint(float nofpclass(inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__nearbyint(
 ; CHECK-SAME: float nofpclass(inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.nearbyint.f32(float %sub.or.zero)
@@ -748,7 +722,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__nearby
 define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__nearbyint(float nofpclass(inf norm nsub) %psub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__nearbyint(
 ; CHECK-SAME: float nofpclass(inf nsub norm) [[PSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[PSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[PSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.nearbyint.f32(float %psub.or.zero)
@@ -758,7 +732,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__nearb
 define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__nearbyint(float nofpclass(inf norm psub) %nsub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__nearbyint(
 ; CHECK-SAME: float nofpclass(inf psub norm) [[NSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.nearbyint.f32(float [[NSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[NSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.nearbyint.f32(float %nsub.or.zero)
@@ -768,7 +742,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__nearb
 define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__round(float nofpclass(inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__round(
 ; CHECK-SAME: float nofpclass(inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.round.f32(float %sub.or.zero)
@@ -778,7 +752,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__round(
 define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__round(float nofpclass(inf norm nsub) %psub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__round(
 ; CHECK-SAME: float nofpclass(inf nsub norm) [[PSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[PSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[PSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.round.f32(float %psub.or.zero)
@@ -788,7 +762,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__round
 define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__round(float nofpclass(inf norm psub) %nsub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__round(
 ; CHECK-SAME: float nofpclass(inf psub norm) [[NSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.round.f32(float [[NSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[NSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.round.f32(float %nsub.or.zero)
@@ -798,7 +772,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__round
 define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__roundeven(float nofpclass(inf norm) %sub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__roundeven(
 ; CHECK-SAME: float nofpclass(inf norm) [[SUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[SUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[SUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.roundeven.f32(float %sub.or.zero)
@@ -808,7 +782,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_sub_or_zero_or_nan__rounde
 define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__roundeven(float nofpclass(inf norm nsub) %psub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__roundeven(
 ; CHECK-SAME: float nofpclass(inf nsub norm) [[PSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[PSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[PSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.roundeven.f32(float %psub.or.zero)
@@ -818,7 +792,7 @@ define nofpclass(nan) float @ret_no_nans_source_known_psub_or_zero_or_nan__round
 define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__roundeven(float nofpclass(inf norm psub) %nsub.or.zero) {
 ; CHECK-LABEL: define nofpclass(nan) float @ret_no_nans_source_known_nsub_or_zero_or_nan__roundeven(
 ; CHECK-SAME: float nofpclass(inf psub norm) [[NSUB_OR_ZERO:%.*]]) {
-; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.roundeven.f32(float [[NSUB_OR_ZERO]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call float @llvm.copysign.f32(float 0.000000e+00, float [[NSUB_OR_ZERO]])
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call float @llvm.roundeven.f32(float %nsub.or.zero)
