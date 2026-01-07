@@ -11,6 +11,18 @@ add_header_library(
 )
 
 add_header_library(
+  utils
+  HDRS
+    utils.h
+  DEPENDS
+    .slice
+    libc.hdr.stdint_proxy
+    libc.src.__support.common
+    libc.src.__support.libc_assert
+    libc.src.__support.uint128
+)
+
+add_header_library(
   zip
   HDRS
     zip.h
