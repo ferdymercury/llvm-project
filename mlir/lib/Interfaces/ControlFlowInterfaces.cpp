@@ -604,8 +604,9 @@ Region *mlir::getEnclosingRepetitiveRegion(Value value) {
 }
 
 /// Return "true" if `a` can be used in lieu of `b`, where `b` is a region
-/// successor input and `a` is a "possible value" of `b`. Possible values are
-/// successor operand values that are (maybe transitively) forwarded to `b`.
+/// successor input and `a` is a "reachable value" of `b`. Reachable values
+/// are successor operand values that are (maybe transitively) forwarded to
+/// `b`.
 static bool isDefinedBefore(Operation *regionBranchOp, Value a, Value b) {
   assert((b.getDefiningOp() == regionBranchOp ||
           b.getParentRegion()->getParentOp() == regionBranchOp) &&
@@ -613,7 +614,7 @@ static bool isDefinedBefore(Operation *regionBranchOp, Value a, Value b) {
 
   // Case 1: `a` is defined inside of the region branch op. `a` must be
   // directly nested in the region branch op. Otherwise, it could not have
-  // been among the possible values for a region successor input.
+  // been among the reachable values for a region successor input.
   if (a.getParentRegion()->getParentOp() == regionBranchOp) {
     // Case 1.1: If `b` is a result of the region branch op, `a` is not in
     // scope for `b`.
@@ -639,7 +640,7 @@ static bool isDefinedBefore(Operation *regionBranchOp, Value a, Value b) {
 
   // Case 2: `a` is defined outside of the region branch op. In that case, we
   // can safely assume that `a` was defined before `b`. Otherwise, it could not
-  // be among the possible values for a region successor input.
+  // be among the reachable values for a region successor input.
   // Example:
   // {   <- %a1 parent region begins here.
   // ^bb0(%a1: ...):
@@ -661,30 +662,30 @@ static bool isDefinedBefore(Operation *regionBranchOp, Value a, Value b) {
 /// } else {
 ///   scf.yield %b : ...
 /// }
-/// possibleValues(%r) = {%a, %b}
+/// reachableValues(%r) = {%a, %b}
 ///
 /// Example 2:
 /// %r = scf.for ... iter_args(%arg0 = %0) -> ... {
 ///   scf.yield %arg0 : ...
 /// }
-/// possibleValues(%arg0) = {%0}
-/// possibleValues(%r) = {%0}
+/// reachableValues(%arg0) = {%0}
+/// reachableValues(%r) = {%0}
 ///
 /// Example 3:
 /// %r = scf.for ... iter_args(%arg0 = %0) -> ... {
 ///   ...
 ///   scf.yield %1 : ...
 /// }
-/// possibleValues(%arg0) = {%0, %1}
-/// possibleValues(%r) = {%0, %1}
-static llvm::SmallDenseSet<Value> computePossibleValuesOfSuccessorInput(
+/// reachableValues(%arg0) = {%0, %1}
+/// reachableValues(%r) = {%0, %1}
+static llvm::SmallDenseSet<Value> computeReachableValuesFromSuccessorInput(
     Value value, const RegionBranchInverseSuccessorMapping &inputToOperands) {
   assert(inputToOperands.contains(value) && "value must be a successor input");
   // Starting with the given value, trace back all predecessor values (i.e.,
-  // preceding successor operands) and add them to the set of possible values.
+  // preceding successor operands) and add them to the set of reachable values.
   // If the successor operand is again a successor input, do not add it to
   // result set, but instead continue the traversal.
-  llvm::SmallDenseSet<Value> possibleValues;
+  llvm::SmallDenseSet<Value> reachableValues;
   llvm::SmallDenseSet<Value> visited;
   SmallVector<Value> worklist;
   worklist.push_back(value);
@@ -692,7 +693,7 @@ static llvm::SmallDenseSet<Value> computePossibleValuesOfSuccessorInput(
     Value next = worklist.pop_back_val();
     auto it = inputToOperands.find(next);
     if (it == inputToOperands.end()) {
-      possibleValues.insert(next);
+      reachableValues.insert(next);
       continue;
     }
     for (OpOperand *operand : it->second)
@@ -701,7 +702,7 @@ static llvm::SmallDenseSet<Value> computePossibleValuesOfSuccessorInput(
   }
   // Note: The result does not contain any successor inputs. (Therefore,
   // `value` is also guaranteed to be excluded.)
-  return possibleValues;
+  return reachableValues;
 }
 
 namespace {
@@ -716,10 +717,10 @@ namespace {
 /// }
 /// use(%r0, %r1)
 ///
-/// possibleValues(%r0) = {%0, %1}
-/// possibleValues(%r1) = {%1} ==> replace uses of %r1 with %1.
-/// possibleValues(%arg0) = {%0, %1}
-/// possibleValues(%arg1) = {%1} ==> replace uses of %arg1 with %1.
+/// reachableValues(%r0) = {%0, %1}
+/// reachableValues(%r1) = {%1} ==> replace uses of %r1 with %1.
+/// reachableValues(%arg0) = {%0, %1}
+/// reachableValues(%arg1) = {%1} ==> replace uses of %arg1 with %1.
 ///
 /// IR after pattern application:
 ///
@@ -751,26 +752,26 @@ struct MakeRegionBranchOpSuccessorInputsDead : public RewritePattern {
       // Nothing to do for successor inputs that are already dead.
       if (value.use_empty())
         continue;
-      // Nothing to do for successor inputs that may have multiple possible
+      // Nothing to do for successor inputs that may have multiple reachable
       // values.
-      llvm::SmallDenseSet<Value> possibleValues =
-          computePossibleValuesOfSuccessorInput(value, inputToOperands);
-      if (possibleValues.size() != 1)
+      llvm::SmallDenseSet<Value> reachableValues =
+          computeReachableValuesFromSuccessorInput(value, inputToOperands);
+      if (reachableValues.size() != 1)
         continue;
-      assert(*possibleValues.begin() != value &&
+      assert(*reachableValues.begin() != value &&
              "successor inputs are supposed to be excluded");
-      // Do not replace `value` with the found possible value if doing so would
-      // violate dominance. Example:
+      // Do not replace `value` with the found reachable value if doing so
+      // would violate dominance. Example:
       // %r = scf.execute_region ... {
       //   %a = ...
       //   scf.yield %a : ...
       // }
       // use(%r)
-      // In the above example, possibleValues(%r) = {%a}, but %a cannot be used
-      // as a replacement for %r due to dominance / scope.
-      if (!isDefinedBefore(regionBranchOp, *possibleValues.begin(), value))
+      // In the above example, reachableValues(%r) = {%a}, but %a cannot be
+      // used as a replacement for %r due to dominance / scope.
+      if (!isDefinedBefore(regionBranchOp, *reachableValues.begin(), value))
         continue;
-      rewriter.replaceAllUsesWith(value, *possibleValues.begin());
+      rewriter.replaceAllUsesWith(value, *reachableValues.begin());
       changed = true;
     }
     return success(changed);
@@ -873,7 +874,7 @@ struct RemoveDeadRegionBranchOpSuccessorInputs : public RewritePattern {
     // Determine which values to remove and group them by block and operation.
     SmallVector<Value> valuesToRemove;
     DenseMap<Block *, BitVector> blockArgsToRemove;
-    DenseMap<Operation *, BitVector> resultsToRemove;
+    BitVector resultsToRemove(regionBranchOp->getNumResults(), false);
     // Iterate over all sets of tied successor inputs.
     for (auto it = tiedSuccessorInputs.begin(), e = tiedSuccessorInputs.end();
          it != e; ++it) {
@@ -905,12 +906,11 @@ struct RemoveDeadRegionBranchOpSuccessorInputs : public RewritePattern {
                                       arg.getOwner()->getNumArguments());
           vector.set(arg.getArgNumber());
         } else {
-          // Set resultsToRemove[op][result_number] = true.
+          // Set resultsToRemove[result_number] = true.
           OpResult result = cast<OpResult>(*memberIt);
-          BitVector &vector =
-              lookupOrCreateBitVector(resultsToRemove, result.getDefiningOp(),
-                                      result.getDefiningOp()->getNumResults());
-          vector.set(result.getResultNumber());
+          assert(result.getDefiningOp() == regionBranchOp &&
+                 "result must be a region branch op result");
+          resultsToRemove.set(result.getResultNumber());
         }
         valuesToRemove.push_back(*memberIt);
       }
@@ -949,8 +949,8 @@ struct RemoveDeadRegionBranchOpSuccessorInputs : public RewritePattern {
     }
 
     // Erase op results.
-    for (auto [op, resultsToErase] : resultsToRemove)
-      rewriter.eraseOpResults(op, resultsToErase);
+    if (resultsToRemove.any())
+      rewriter.eraseOpResults(regionBranchOp, resultsToRemove);
 
     return success();
   }
